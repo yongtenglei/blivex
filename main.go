@@ -16,11 +16,13 @@ var startUrlFormat = "https://api.live.bilibili.com/xlive/web-room/v1/index/getD
 var startInfo StartInfo
 
 func main() {
-	biliClient := NewBiliClient(3683436)
+	biliClient := NewBiliClient(22495868)
 	hostList := biliClient.GetHostList()
 	biliClient.Connect(hostList)
 	defer biliClient.Disconnect()
 
+	go biliClient.ReceiveMessages()
+	go biliClient.ParseMessages()
 	biliClient.HeartBeat()
 }
 
@@ -28,6 +30,8 @@ type BiliClient struct {
 	RoomID     uint32
 	HTTPClient *http.Client
 	Conn       *websocket.Conn
+
+	Ch chan PacketBody
 }
 
 func NewBiliClient(roomID uint32) *BiliClient {
@@ -35,6 +39,8 @@ func NewBiliClient(roomID uint32) *BiliClient {
 		RoomID:     roomID,
 		HTTPClient: &http.Client{},
 		Conn:       nil,
+
+		Ch: make(chan PacketBody, 1024),
 	}
 }
 
